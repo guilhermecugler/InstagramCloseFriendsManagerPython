@@ -1,4 +1,5 @@
 # Instagram Close Friends Manager 🎉
+![Views](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/guilhermecugler/InstagramCloseFriendsManagerPython&title=Views)
 
 ## Description 📖
 
