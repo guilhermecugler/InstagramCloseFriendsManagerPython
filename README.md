@@ -4,6 +4,9 @@
 
 The **Instagram Close Friends Manager** is a tool that allows you to manage your close friends list on Instagram automatically. With this tool, you can add or remove users from your close friends list efficiently and quickly.
 
+![Preview](preview.png)
+
+
 ## Features ✨
 
 - **User-Friendly Interface**: Anyone can use it without any programming knowledge.

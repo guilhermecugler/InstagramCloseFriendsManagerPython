@@ -3,6 +3,7 @@
 # Email: guilhermecugler@gmail.com
 # Contact: +5513997230761 (WhatsApp)
 
+from ast import Await
 import asyncio
 import json
 import os
@@ -26,18 +27,26 @@ async def async_login(username, password, app):
             context = await browser.new_context()
             page = await context.new_page()
 
-            await page.goto("https://www.instagram.com")
+            await page.goto("https://www.instagram.com/accounts/login/?hl=en-us%3Fnext%3Dhttps%3A%2F%2Fwww.instagram.com%2Faccounts%2Fclose_friends%2F%3Fhl%3Den-us%26__coig_login%3D1#")
             await page.fill("input[name='username']", username)
             await page.fill("input[name='password']", password)
             await page.click("button[type='submit']")
-            await page.wait_for_load_state("networkidle")
+                                    
+            # Aguarda o botão "Save info" aparecer
+            save_info_button = page.locator("//button[text()='Save info']")
+            await save_info_button.wait_for(state="visible", timeout=20000)
+            await save_info_button.click()
+            await page.goto("https://www.instagram.com/accounts/close_friends/?hl=en-us&__coig_login=1")
+            # await page.wait_for_load_state("networkidle")
 
-            if await page.title() != "Instagram":
+            close_friends_title = page.locator("//h2[text()='Close friends']")
+            await close_friends_title.wait_for(state="visible", timeout=15000)
+
+            if not close_friends_title.is_visible():
                 app.log("Login failed: Invalid credentials")
                 messagebox.showerror("Error", "Login failed! Check your credentials")
                 await browser.close()
                 return
-
             await context.storage_state(path="state.json")
             app.log("Session state saved successfully")
 
