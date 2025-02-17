@@ -10,7 +10,7 @@ import threading
 from tkinter import messagebox
 from datetime import datetime
 from auth.login import run_async_login
-from processing.processor import process_ids, load_processed_ids, save_processed_ids
+from processing.processor import process_ids, load_processed_ids, save_processed_ids, extract_ids, load_extracted_ids
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
@@ -20,14 +20,14 @@ class InstagramTool(ctk.CTk):
         super().__init__()
         self.title("Instagram - Close Friends Manager")
         window_height = 671
-        window_width = 711
+        window_width = 900
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
 
         position_top = int(screen_height / 2 - window_height / 2)
         position_right = int(screen_width / 2 - window_width / 2)
-
+        self.iconbitmap("icon.ico")
         self.geometry(f'{window_width}x{window_height}+{position_right}+{position_top-24}')
 
         self.current_user = None
@@ -62,6 +62,14 @@ class InstagramTool(ctk.CTk):
         self.password_entry = ctk.CTkEntry(self.login_frame, placeholder_text="Password", show="*")
         self.password_entry.pack(pady=5, padx=5, fill="x")
         
+        self.two_factor_var = ctk.BooleanVar()
+        self.two_factor_checkbox = ctk.CTkCheckBox(
+            self.login_frame,
+            text="Two-Factor Authentication(Will wait 60 seconds to input code)",
+            variable=self.two_factor_var
+        )
+        self.two_factor_checkbox.pack(pady=5)
+        
         self.login_btn = ctk.CTkButton(
             self.login_frame, 
             text="Login & Save Session", 
@@ -95,12 +103,27 @@ class InstagramTool(ctk.CTk):
             variable=self.resume_var
         ).pack(side="left", padx=5)
         
+        self.use_extracted_var = ctk.BooleanVar()
+        self.use_extracted_checkbox = ctk.CTkCheckBox(
+            self.controls_frame,
+            text="Use Extracted IDs",
+            variable=self.use_extracted_var
+        )
+        self.use_extracted_checkbox.pack(side="left", padx=5)
+        
         self.start_btn = ctk.CTkButton(
             self.controls_frame, 
             text="Start Processing", 
             command=self.start_processing
         )
         self.start_btn.pack(side="right", padx=5)
+        
+        self.extract_btn = ctk.CTkButton(
+            self.controls_frame, 
+            text="Extract IDs", 
+            command=self.start_extracting
+        )
+        self.extract_btn.pack(side="right", padx=5)
         
         # Log Console
         self.log_frame = ctk.CTkFrame(self)
@@ -110,15 +133,13 @@ class InstagramTool(ctk.CTk):
         self.log_text.pack(fill="both", expand=True, padx=5, pady=5)
         
         # Progress Bar
-        self.progress_bar = ctk.CTkProgressBar(self, mode="indeterminate")
+        self.progress_bar = ctk.CTkProgressBar(self, mode="determinate")
         self.progress_bar.pack(pady=10, padx=10, fill="x")
         self.author_label = ctk.CTkLabel(self, text="Author: Guilherme Cugler - @guilhermecugler", anchor="w")
         self.author_label.pack(side="bottom", fill="x", padx=10, pady=5)
         # Status Bar
         self.status_bar = ctk.CTkLabel(self, text="Ready", anchor="w")
         self.status_bar.pack(side="bottom", fill="x", padx=10, pady=5)
-
-
 
     def load_sessions(self):
         session_dir = "sessions"
@@ -154,6 +175,10 @@ class InstagramTool(ctk.CTk):
         self.status_bar.configure(text=message)
         self.update()
 
+    def update_progress(self, value):
+        self.progress_bar.set(value)
+        self.update()
+
     def load_session(self):
         session_name = self.session_combobox.get()
         if not session_name:
@@ -172,6 +197,7 @@ class InstagramTool(ctk.CTk):
     def start_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
+        two_factor = self.two_factor_var.get()
 
         if not username or not password:
             messagebox.showwarning("Warning", "Please fill in username and password!")
@@ -179,7 +205,7 @@ class InstagramTool(ctk.CTk):
 
         threading.Thread(
             target=run_async_login, 
-            args=(username, password, self), 
+            args=(username, password, self, two_factor), 
             daemon=True
         ).start()
 
@@ -191,13 +217,34 @@ class InstagramTool(ctk.CTk):
         self.running = True
         mode = self.mode_var.get()
         resume = self.resume_var.get()
+        use_extracted = self.use_extracted_var.get()
 
+        self.progress_bar.set(0)
         self.progress_bar.start()
-        threading.Thread(target=self.run_processing, args=(mode, resume), daemon=True).start()
+        threading.Thread(target=self.run_processing, args=(mode, resume, use_extracted), daemon=True).start()
 
-    def run_processing(self, mode, resume):
-        process_ids(self, mode, resume)
+    def run_processing(self, mode, resume, use_extracted):
+        if use_extracted:
+            ids = load_extracted_ids()
+            process_ids(self, mode, resume, ids)
+        else:
+            process_ids(self, mode, resume)
         self.progress_bar.stop()
+        self.progress_bar.set(1)
+
+    def start_extracting(self):
+        if not self.loaded_session:
+            messagebox.showwarning("Warning", "Load a session first!")
+            return
+
+        self.progress_bar.set(0)
+        self.progress_bar.start()
+        threading.Thread(target=self.run_extracting, daemon=True).start()
+
+    def run_extracting(self):
+        extract_ids(self)
+        self.progress_bar.stop()
+        self.progress_bar.set(1)
 
     def on_closing(self):
         if self.running:

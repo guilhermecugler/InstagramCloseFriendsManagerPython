@@ -8,16 +8,17 @@ import asyncio
 import json
 import os
 from tkinter import messagebox
+from warnings import catch_warnings
 from playwright.async_api import async_playwright
 from processing.processor import load_processed_ids
 
-def run_async_login(username, password, app):
+def run_async_login(username, password, app, two_factor):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(async_login(username, password, app))
+    loop.run_until_complete(async_login(username, password, app, two_factor))
     loop.close()
 
-async def async_login(username, password, app):
+async def async_login(username, password, app, two_factor):
     app.update_status("Logging in...")
     app.log("Starting login process...")
 
@@ -31,12 +32,18 @@ async def async_login(username, password, app):
             await page.fill("input[name='username']", username)
             await page.fill("input[name='password']", password)
             await page.click("button[type='submit']")
-                                    
-            # Aguarda o botão "Save info" aparecer
-            save_info_button = page.locator("//button[text()='Save info']")
-            await save_info_button.wait_for(state="visible", timeout=20000)
-            if save_info_button.is_visible():
-                await save_info_button.click()
+
+            if two_factor:
+                app.log("Waiting for two-factor authentication...")
+                await page.wait_for_timeout(60000)  # Aguarda 1 minuto para a autenticação de dois fatores
+
+            try:
+                save_info_button = page.locator("//button[text()='Save info']")
+                await save_info_button.wait_for(state="visible", timeout=20000)
+                if save_info_button.is_visible():
+                    await save_info_button.click()
+            except Exception as e:
+                pass
                 
             await page.goto("https://www.instagram.com/accounts/close_friends/?hl=en-us&__coig_login=1")
             # await page.wait_for_load_state("networkidle")
@@ -105,4 +112,4 @@ def save_session(app):
 
         app.log(f"Session saved for {app.current_user}")
     except Exception as e:
-        app.log(f"Error saving session: {str(e)}")
+        app.log(f"Error saving session: {str(e)})")
