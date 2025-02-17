@@ -35,7 +35,9 @@ async def async_login(username, password, app):
             # Aguarda o botão "Save info" aparecer
             save_info_button = page.locator("//button[text()='Save info']")
             await save_info_button.wait_for(state="visible", timeout=20000)
-            await save_info_button.click()
+            if save_info_button.is_visible():
+                await save_info_button.click()
+                
             await page.goto("https://www.instagram.com/accounts/close_friends/?hl=en-us&__coig_login=1")
             # await page.wait_for_load_state("networkidle")
 
