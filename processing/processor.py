@@ -38,6 +38,7 @@ def chunked(iterable, n):
 
 def process_ids(app, mode, resume, ids=None):
     app.update_status("Processing IDs...")
+    app.update_progress(0)
     app.log(f"============================================================")
 
     app.log(f"Starting processing in '{'addition' if mode == 'add' else 'removal'}' mode")
@@ -65,7 +66,7 @@ def process_ids(app, mode, resume, ids=None):
                 break
 
             app.update_status(f"Processing batch {i+1} ({len(chunk)} IDs)")
-            app.update_progress((i + 1) / (total_ids / 500))
+            app.update_progress(i / (total_ids / 500))
 
             try:
                 added_set = set(app.processed_ids["added"])
@@ -166,8 +167,10 @@ async def get_following(headers, app, max_id=''):
     return following
 
 def bulk_update(app, ids, operation):
+    app.update_progress(0)
     chunk_size = 500
     total = len(ids)
+    total_chunks = (total + chunk_size - 1) // chunk_size  # Calculate total number of chunks
     key = "added" if operation == "add" else "removed"
     opposite_key = "removed" if operation == "add" else "added"
 
@@ -215,6 +218,7 @@ def bulk_update(app, ids, operation):
                 app.log(f"Error in batch {i//chunk_size + 1}: {response.text}")
                 app.processed_ids = load_processed_ids(app.current_user)
 
+            app.update_progress(total_chunks / total * (i//chunk_size + 1))
             time.sleep(1)
 
         except Exception as e:
@@ -234,6 +238,7 @@ def extract_ids(app):
         app.log(f"Extracted {len(all_ids)} followers and following successfully!", color="green")
         app.update_status("ID extraction completed")
         app.update_progress(1)
+        return all_ids
 
     except Exception as e:
         app.log(f"Error during ID extraction: {str(e)}", color="red")

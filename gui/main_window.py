@@ -27,7 +27,11 @@ class InstagramTool(ctk.CTk):
 
         position_top = int(screen_height / 2 - window_height / 2)
         position_right = int(screen_width / 2 - window_width / 2)
-        self.iconbitmap("icon.ico")
+        
+        icon_path = os.path.join(os.path.dirname(__file__), '..', 'icon.ico')
+        if os.path.exists(icon_path):
+            self.iconbitmap(icon_path)
+        
         self.geometry(f'{window_width}x{window_height}+{position_right}+{position_top-24}')
 
         self.current_user = None
@@ -220,7 +224,7 @@ class InstagramTool(ctk.CTk):
         use_extracted = self.use_extracted_var.get()
 
         self.progress_bar.set(0)
-        self.progress_bar.start()
+        # self.progress_bar.start()
         threading.Thread(target=self.run_processing, args=(mode, resume, use_extracted), daemon=True).start()
 
     def run_processing(self, mode, resume, use_extracted):
@@ -242,9 +246,11 @@ class InstagramTool(ctk.CTk):
         threading.Thread(target=self.run_extracting, daemon=True).start()
 
     def run_extracting(self):
-        extract_ids(self)
+        ids = extract_ids(self)
         self.progress_bar.stop()
         self.progress_bar.set(1)
+        self.update_progress(1)
+        self.log(f"Extracted {len(ids)} IDs successfully!", color="green")
 
     def on_closing(self):
         if self.running:
