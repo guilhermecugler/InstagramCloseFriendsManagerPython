@@ -8,6 +8,7 @@ import requests
 import time
 import asyncio
 import httpx
+import logging
 
 def load_processed_ids(user):
     try:
@@ -42,6 +43,7 @@ def process_ids(app, mode, resume, ids=None):
     app.log(f"============================================================")
 
     app.log(f"Starting processing in '{'addition' if mode == 'add' else 'removal'}' mode")
+    logging.info("Starting processing in '%s' mode", 'addition' if mode == 'add' else 'removal')
 
     try:
         headers = get_headers(app)
@@ -58,6 +60,7 @@ def process_ids(app, mode, resume, ids=None):
         else:
             ids_to_process = all_ids
             app.log(f"Starting from the beginning - {len(ids_to_process)} IDs to process")
+            logging.info("Starting from the beginning - %d IDs to process", len(ids_to_process))
 
         total_ids = len(ids_to_process)
         for i, chunk in enumerate(chunked(ids_to_process, 500)):
@@ -100,6 +103,7 @@ def process_ids(app, mode, resume, ids=None):
                 print(f'Status code: {response.status_code}')
                 if response.status_code == 200:
                     app.log(f"Batch {i+1} processed successfully")
+                    logging.info("Batch %d processed successfully", i+1)
                 else:
                     app.log(f"Error in batch {i+1}: {response.text}")
                     app.processed_ids = load_processed_ids(app.current_user)
@@ -118,6 +122,7 @@ def process_ids(app, mode, resume, ids=None):
 
     except Exception as e:
         app.log(f"Error during processing: {str(e)}", color="red")
+        logging.error("Error during processing: %s", str(e))
         app.update_status("Error during processing")
 
     finally:
@@ -230,18 +235,21 @@ def bulk_update(app, ids, operation):
 def extract_ids(app):
     app.update_status("Extracting IDs...")
     app.log("Starting ID extraction...(This may take a while if you have a lot of followers or following...)")
+    logging.info("Starting ID extraction")
 
     try:
         headers = get_headers(app)
         all_ids = asyncio.run(get_all_ids(headers, app))
         save_extracted_ids(all_ids)
         app.log(f"Extracted {len(all_ids)} followers and following successfully!", color="green")
+        logging.info("Extracted %d followers and following successfully", len(all_ids))
         app.update_status("ID extraction completed")
         app.update_progress(1)
         return all_ids
 
     except Exception as e:
         app.log(f"Error during ID extraction: {str(e)}", color="red")
+        logging.error("Error during ID extraction: %s", str(e))
         app.update_status("Error during ID extraction")
 
     finally:

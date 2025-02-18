@@ -11,6 +11,7 @@ from tkinter import messagebox
 from warnings import catch_warnings
 from playwright.async_api import async_playwright
 from processing.processor import load_processed_ids
+import logging
 
 def run_async_login(username, password, app, two_factor):
     loop = asyncio.new_event_loop()
@@ -21,6 +22,7 @@ def run_async_login(username, password, app, two_factor):
 async def async_login(username, password, app, two_factor):
     app.update_status("Logging in...")
     app.log("Starting login process...")
+    logging.info("Starting login process for user: %s", username)
 
     try:
         async with async_playwright() as p:
@@ -58,6 +60,7 @@ async def async_login(username, password, app, two_factor):
                 return
             await context.storage_state(path="state.json")
             app.log("Session state saved successfully")
+            logging.info("Session state saved successfully for user: %s", username)
 
             cookies = await context.cookies()
             sessionid = next(c['value'] for c in cookies if c['name'] == 'sessionid')
@@ -85,12 +88,13 @@ async def async_login(username, password, app, two_factor):
             app.processed_ids = load_processed_ids(app.current_user)
 
             app.log(f"Login successful! User ID: {user_id}")
-            app.update_status("Login successful")
+            logging.info("Login successful for user: %s, User ID: %s", username, user_id)
 
             await browser.close()
 
     except Exception as e:
         app.log(f"Error during login: {str(e)}")
+        logging.error("Error during login for user: %s, Error: %s", username, str(e))
         messagebox.showerror("Error", f"Login failed: {str(e)}")
 
 def save_session(app):
@@ -111,5 +115,7 @@ def save_session(app):
             json.dump(session_data, f, indent=4)
 
         app.log(f"Session saved for {app.current_user}")
+        logging.info("Session saved for user: %s", app.current_user)
     except Exception as e:
         app.log(f"Error saving session: {str(e)})")
+        logging.error("Error saving session for user: %s, Error: %s", app.current_user, str(e))

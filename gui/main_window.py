@@ -7,6 +7,7 @@ import customtkinter as ctk
 import os
 import json
 import threading
+import logging
 from tkinter import messagebox
 from datetime import datetime
 from auth.login import run_async_login
@@ -38,9 +39,15 @@ class InstagramTool(ctk.CTk):
         self.processed_ids = {"added": [], "removed": []}
         self.running = False
         self.loaded_session = None
+        self.logging_enabled = False
+        self.setup_logging()
 
         self.create_widgets()
         self.load_sessions()
+
+    def setup_logging(self):
+        logging.basicConfig(filename='app.log', level=logging.INFO, 
+                            format='%(asctime)s - %(levelname)s - %(message)s')
 
     def create_widgets(self):
         # Session Management
@@ -128,7 +135,7 @@ class InstagramTool(ctk.CTk):
             command=self.start_extracting
         )
         self.extract_btn.pack(side="right", padx=5)
-        
+
         # Log Console
         self.log_frame = ctk.CTkFrame(self)
         self.log_frame.pack(pady=10, padx=10, fill="both", expand=True)
@@ -139,11 +146,17 @@ class InstagramTool(ctk.CTk):
         # Progress Bar
         self.progress_bar = ctk.CTkProgressBar(self, mode="determinate")
         self.progress_bar.pack(pady=10, padx=10, fill="x")
+        
         self.author_label = ctk.CTkLabel(self, text="Author: Guilherme Cugler - @guilhermecugler", anchor="w")
         self.author_label.pack(side="bottom", fill="x", padx=10, pady=5)
+        
         # Status Bar
         self.status_bar = ctk.CTkLabel(self, text="Ready", anchor="w")
         self.status_bar.pack(side="bottom", fill="x", padx=10, pady=5)
+
+        # Logging Switch
+        self.logging_switch = ctk.CTkSwitch(self, text="Enable Logging", command=self.toggle_logging)
+        self.logging_switch.pack(side="bottom", anchor="e", padx=10, pady=5)
 
     def load_sessions(self):
         session_dir = "sessions"
@@ -174,6 +187,18 @@ class InstagramTool(ctk.CTk):
         # Rolar para o final
         self.log_text.see("end")
         self.update()
+
+        if self.logging_enabled:
+            logging.info(message)
+
+    def toggle_logging(self):
+        self.logging_enabled = not self.logging_enabled
+        if self.logging_enabled:
+            self.logging_switch.configure(text="Disable Logging")
+            self.log("Logging enabled", color="blue")
+        else:
+            self.logging_switch.configure(text="Enable Logging")
+            self.log("Logging disabled", color="blue")
 
     def update_status(self, message):
         self.status_bar.configure(text=message)
