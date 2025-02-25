@@ -1,6 +1,9 @@
 # Instagram Close Friends Manager 🎉
 ![Views](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/guilhermecugler/InstagramCloseFriendsManagerPython&title=Views)
 
+## ❌ In the last few days, Instagram has started applying stricter blocks on all APIs, including the mobile one. Currently, the software is non-functional.  
+
+
 ## Description 📖
 
 The **Instagram Close Friends Manager** is a tool that allows you to manage your close friends list on Instagram automatically. With this tool, you can add or remove users from your close friends list efficiently and quickly.
